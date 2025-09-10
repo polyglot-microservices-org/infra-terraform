@@ -44,8 +44,8 @@ ORG_NAME="polyglot-microservices-org"
 CLONE_ROOT="/home/ubuntu/polyglot-org"
 TOKEN="${GH_PAT}"  # GitHub PAT passed as env var from Terraform / workflow
 
-mkdir -p $CLONE_ROOT
-cd $CLONE_ROOT
+mkdir -p "$CLONE_ROOT"
+cd "$CLONE_ROOT"
 
 echo "📂 Fetching list of repositories in organization..."
 REPO_LIST=$(curl -s -H "Authorization: token $TOKEN" \
@@ -57,9 +57,9 @@ for repo in $REPO_LIST; do
     git clone "https://github.com/$ORG_NAME/$repo.git" "$CLONE_ROOT/$repo"
   else
     echo "🔄 Updating existing $repo..."
-    cd $CLONE_ROOT/$repo
+    cd "$CLONE_ROOT/$repo"
     git pull origin main
-    cd $CLONE_ROOT
+    cd "$CLONE_ROOT"
   fi
 done
 
@@ -82,7 +82,7 @@ sudo -E -u ubuntu bash -c '
 echo "📦 Deploying all Kubernetes manifests..."
 # Running kubectl as the 'ubuntu' user and preserving the environment variables with sudo -E
 sudo -E -u ubuntu bash -c '
-  find $CLONE_ROOT -name "*.yaml" -not -path "*/.github/*" \
+  find "$CLONE_ROOT" -name "*.yaml" -not -path "*/.github/*" \
     -exec kubectl apply -f {} \;
 '
 
