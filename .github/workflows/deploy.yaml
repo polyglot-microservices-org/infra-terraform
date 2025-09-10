@@ -48,7 +48,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          cd infra-terraform/terraform
+          cd terraform
           terraform init
 
       # 6️⃣ Terraform Apply
@@ -65,3 +65,4 @@ jobs:
             -var="runner_token=${{ steps.runner-token.outputs.runner_token }}" \
             -var="aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var="aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
