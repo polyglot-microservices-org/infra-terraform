@@ -11,13 +11,19 @@ variable "instance_type" {
 }
 
 variable "ami_id" {
-  description = "AMI ID for the instance (Ubuntu 22.04 LTS recommended)"
+  description = "AMI ID for the Ubuntu instance"
   type        = string
   default     = "ami-04f59c565deeb2199"
 }
 
 variable "runner_token" {
-  description = "GitHub runner registration token"
+  description = "GitHub Actions org-level runner token"
+  type        = string
+  sensitive   = true
+}
+
+variable "gh_pat" {
+  description = "GitHub Personal Access Token for org runner registration"
   type        = string
   sensitive   = true
 }
