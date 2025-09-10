@@ -4,7 +4,8 @@ on:
   workflow_dispatch:  # manual trigger
   push:
     paths:
-      - "infra-terraform/**"
+      - "terraform/**"
+      - "scripts/**"
 
 jobs:
   terraform:
@@ -23,7 +24,14 @@ jobs:
           pwd
           ls -R
 
-      # 3️⃣ Get org-level runner token
+      # 3️⃣ Configure AWS CLI
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ${{ secrets.AWS_REGION }}
+
+      # 4️⃣ Get org-level runner token
       - name: Get org-level runner token
         id: runner-token
         run: |
@@ -34,36 +42,22 @@ jobs:
             | jq -r .token)
           echo "runner_token=$token" >> $GITHUB_OUTPUT
 
-      # 4️⃣ Setup Terraform
+      # 5️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
 
-      # 5️⃣ Terraform Init
+      # 6️⃣ Terraform Init
       - name: Terraform Init
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           cd terraform
           terraform init
 
-      # 6️⃣ Terraform Apply
+      # 7️⃣ Terraform Apply
       - name: Terraform Apply
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           cd terraform
           terraform apply -auto-approve \
             -var="aws_region=${{ secrets.AWS_REGION }}" \
-            -var="runner_token=${{ steps.runner-token.outputs.runner_token }}" \
-            -var="aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
-            -var="aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-
-
+            -var="runner_token=${{ steps.runner-token.outputs.runner_token }}"
