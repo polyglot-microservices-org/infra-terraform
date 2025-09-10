@@ -31,18 +31,7 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set region ${{ secrets.AWS_REGION }}
 
-      # 4️⃣ Get org-level runner token
-      - name: Get org-level runner token
-        id: runner-token
-        run: |
-          token=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GH_PAT }}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/orgs/polyglot-microservices-org/actions/runners/registration-token \
-            | jq -r .token)
-          echo "runner_token=$token" >> $GITHUB_OUTPUT
-
-      # 5️⃣ Setup Terraform
+      # 4️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -53,6 +42,17 @@ jobs:
         run: |
           cd terraform
           terraform init
+
+      # 7️⃣ Terraform Apply
+      - name: Terraform Apply
+        run: |
+          cd terraform
+          terraform apply -auto-approve \
+            -var="aws_region=${{ secrets.AWS_REGION }}" \
+            -var="gh_pat=${{ secrets.GH_PAT }}" \
+            -var="aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -var="aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
 
       # 7️⃣ Terraform Apply
       - name: Terraform Apply
