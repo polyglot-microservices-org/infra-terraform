@@ -60,4 +60,5 @@ jobs:
           cd terraform
           terraform apply -auto-approve \
             -var="aws_region=${{ secrets.AWS_REGION }}" \
-            -var="runner_token=${{ steps.runner-token.outputs.runner_token }}"
+            -var="runner_token=${{ steps.runner-token.outputs.runner_token }}" \
+            -var="gh_pat=${{ secrets.GH_PAT }}"
