@@ -23,7 +23,14 @@ chown ubuntu:ubuntu /home/ubuntu/scripts/*.sh
 # -----------------------------
 # Persist environment variables system-wide
 # -----------------------------
-cat <<EOF | sudo tee -a /etc/environment
+# Overwrite or add values safely: remove existing lines first, then append.
+# (This avoids duplicate lines on reruns.)
+sudo sed -i '/^GH_PAT=/d' /etc/environment || true
+sudo sed -i '/^AWS_ACCESS_KEY_ID=/d' /etc/environment || true
+sudo sed -i '/^AWS_SECRET_ACCESS_KEY=/d' /etc/environment || true
+sudo sed -i '/^AWS_REGION=/d' /etc/environment || true
+
+cat <<EOF | sudo tee -a /etc/environment >/dev/null
 GH_PAT=${GH_PAT}
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -63,7 +70,7 @@ for repo in $REPO_LIST; do
   else
     echo "🔄 Updating existing $repo..."
     cd $CLONE_ROOT/$repo
-    git pull origin main
+    git pull origin main || true
     cd $CLONE_ROOT
   fi
 done
@@ -72,24 +79,17 @@ done
 # 3️⃣ Create Kubernetes secret with AWS credentials
 # -----------------------------
 echo "🔑 Creating Kubernetes secret for AWS credentials..."
-su - ubuntu -c '
-  source /etc/environment
-  kubectl create secret generic bedrock-secrets \
-    --from-literal=AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
-    --from-literal=AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
-    --from-literal=AWS_DEFAULT_REGION="${AWS_REGION}" \
-    --dry-run=client -o yaml | kubectl apply -f -
-'
+su - ubuntu -c 'source /etc/environment; kubectl create secret generic bedrock-secrets \
+  --from-literal=AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+  --from-literal=AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+  --from-literal=AWS_DEFAULT_REGION="${AWS_REGION}" \
+  --dry-run=client -o yaml | kubectl apply -f -'
 
 # -----------------------------
 # 4️⃣ Deploy all Kubernetes manifests
 # -----------------------------
 echo "📦 Deploying all Kubernetes manifests..."
-su - ubuntu -c '
-  source /etc/environment
-  find /home/ubuntu/polyglot-org -name "*.yaml" -not -path "*/.github/*" \
-    -exec kubectl apply -f {} \;
-'
+su - ubuntu -c 'source /etc/environment; find /home/ubuntu/polyglot-org -name "*.yaml" -not -path "*/.github/*" -exec kubectl apply -f {} \;'
 
 # -----------------------------
 # 5️⃣ Setup GitHub Actions runner
