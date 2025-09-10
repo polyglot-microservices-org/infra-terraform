@@ -62,8 +62,8 @@ done
 # 3️⃣ Create Kubernetes secret with AWS credentials
 # -----------------------------
 echo "🔑 Creating Kubernetes secret for AWS credentials..."
-# Running kubectl as the 'ubuntu' user to use the correct kubeconfig
-su - ubuntu -c '
+# Running kubectl as the 'ubuntu' user and preserving the environment variables
+sudo -E -u ubuntu bash -c '
   kubectl create secret generic bedrock-secrets \
     --from-literal=AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
     --from-literal=AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
@@ -75,8 +75,8 @@ su - ubuntu -c '
 # 4️⃣ Deploy all Kubernetes manifests
 # -----------------------------
 echo "📦 Deploying all Kubernetes manifests..."
-# Running kubectl as the 'ubuntu' user to use the correct kubeconfig
-su - ubuntu -c '
+# Running kubectl as the 'ubuntu' user and preserving the environment variables
+sudo -E -u ubuntu bash -c '
   find $CLONE_ROOT -name "*.yaml" -not -path "*/.github/*" \
     -exec kubectl apply -f {} \;
 '
@@ -85,7 +85,7 @@ su - ubuntu -c '
 # 5️⃣ Setup GitHub Actions runner
 # -----------------------------
 echo "🚀 Running GitHub Actions runner setup..."
-if ! su - ubuntu -c "bash /home/ubuntu/scripts/setup.sh"; then
+if ! sudo -E -u ubuntu bash /home/ubuntu/scripts/setup.sh; then
   echo "❌ Runner setup failed"
   exit 1
 fi
