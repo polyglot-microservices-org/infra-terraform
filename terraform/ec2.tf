@@ -3,14 +3,17 @@ resource "aws_instance" "demo" {
   instance_type = var.instance_type
   key_name      = "mittanv"
 
-  # Run bootstrap script on EC2 with runner token and GH_PAT
-  user_data = templatefile("${path.module}/../scripts/bootstrap.sh", {
-    runner_token = var.runner_token
-    GH_PAT       = var.gh_pat
-  })
+  user_data = base64encode(templatefile("${path.module}/../scripts/bootstrap.sh", {
+    runner_token          = var.runner_token
+    GH_PAT               = var.gh_pat
+    AWS_ACCESS_KEY_ID    = var.aws_access_key_id
+    AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key
+    AWS_REGION           = var.aws_region
+    setup_script         = file("${path.module}/../scripts/setup.sh")
+    kubeadm_script       = file("${path.module}/../scripts/kubeadm.sh")
+  }))
 
   tags = {
     Name = "mitta-polyglot-org"
   }
 }
-

@@ -1,7 +1,6 @@
 variable "aws_region" {
   description = "AWS region to deploy into"
   type        = string
-  default     = "us-east-1"
 }
 
 variable "instance_type" {
@@ -24,6 +23,18 @@ variable "runner_token" {
 
 variable "gh_pat" {
   description = "GitHub Personal Access Token for org runner registration"
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_access_key_id" {
+  description = "AWS Access Key ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS Secret Access Key"
   type        = string
   sensitive   = true
 }

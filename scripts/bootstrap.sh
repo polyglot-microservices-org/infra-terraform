@@ -3,17 +3,41 @@
 
 set -e
 
+# Create scripts directory
+mkdir -p /home/ubuntu/scripts
+
+# Create setup.sh script
+cat > /home/ubuntu/scripts/setup.sh << 'EOF'
+${setup_script}
+EOF
+
+# Create kubeadm.sh script
+cat > /home/ubuntu/scripts/kubeadm.sh << 'EOF'
+${kubeadm_script}
+EOF
+
+# Make scripts executable
+chmod +x /home/ubuntu/scripts/*.sh
+chown ubuntu:ubuntu /home/ubuntu/scripts/*.sh
+
+# Export variables for scripts
+export runner_token="${runner_token}"
+export GH_PAT="${GH_PAT}"
+export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+export AWS_REGION="${AWS_REGION}"
+
 # -----------------------------
 # 1️⃣ Setup GitHub Actions runner
 # -----------------------------
 echo "🚀 Running GitHub Actions runner setup..."
-bash /home/ubuntu/scripts/setup.sh
+su - ubuntu -c "bash /home/ubuntu/scripts/setup.sh"
 
 # -----------------------------
 # 2️⃣ Setup Kubernetes control plane
 # -----------------------------
 echo "🚀 Running Kubernetes control plane setup..."
-bash /home/ubuntu/scripts/kubeadm.sh
+su - ubuntu -c "bash /home/ubuntu/scripts/kubeadm.sh"
 
 # -----------------------------
 # 3️⃣ Clone all repositories in the organization
