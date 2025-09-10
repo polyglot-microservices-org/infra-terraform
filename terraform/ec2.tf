@@ -6,10 +6,11 @@ resource "aws_instance" "demo" {
   # Run bootstrap script on EC2 with runner token and GH_PAT
   user_data = templatefile("${path.module}/../scripts/bootstrap.sh", {
     runner_token = var.runner_token
-    gh_pat       = var.gh_pat
+    GH_PAT       = var.gh_pat
   })
 
   tags = {
     Name = "mitta-polyglot-org"
   }
 }
+
