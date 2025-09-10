@@ -21,26 +21,19 @@ chmod +x /home/ubuntu/scripts/*.sh
 chown ubuntu:ubuntu /home/ubuntu/scripts/*.sh
 
 # Export variables for scripts
-export runner_token="${runner_token}"
 export GH_PAT="${GH_PAT}"
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
 export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
 export AWS_REGION="${AWS_REGION}"
 
 # -----------------------------
-# 1️⃣ Setup GitHub Actions runner
-# -----------------------------
-echo "🚀 Running GitHub Actions runner setup..."
-su - ubuntu -c "bash /home/ubuntu/scripts/setup.sh"
-
-# -----------------------------
-# 2️⃣ Setup Kubernetes control plane
+# 1️⃣ Setup Kubernetes control plane
 # -----------------------------
 echo "🚀 Running Kubernetes control plane setup..."
 su - ubuntu -c "bash /home/ubuntu/scripts/kubeadm.sh"
 
 # -----------------------------
-# 3️⃣ Clone all repositories in the organization
+# 2️⃣ Clone all repositories in the organization
 # -----------------------------
 ORG_NAME="polyglot-microservices-org"
 CLONE_ROOT="/home/ubuntu/polyglot-org"
@@ -66,7 +59,7 @@ for repo in $REPO_LIST; do
 done
 
 # -----------------------------
-# 4️⃣ Create Kubernetes secret with AWS credentials
+# 3️⃣ Create Kubernetes secret with AWS credentials
 # -----------------------------
 echo "🔑 Creating Kubernetes secret for AWS credentials..."
 kubectl create secret generic bedrock-secrets \
@@ -76,10 +69,19 @@ kubectl create secret generic bedrock-secrets \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # -----------------------------
-# 5️⃣ Deploy all Kubernetes manifests
+# 4️⃣ Deploy all Kubernetes manifests
 # -----------------------------
 echo "📦 Deploying all Kubernetes manifests..."
 find $CLONE_ROOT -name '*.yaml' -not -path '*/.github/*' \
   -exec kubectl apply -f {} \;
 
-echo "✅ Bootstrap complete: runner ready + Kubernetes + all manifests deployed."
+# -----------------------------
+# 5️⃣ Setup GitHub Actions runner
+# -----------------------------
+echo "🚀 Running GitHub Actions runner setup..."
+if ! su - ubuntu -c "bash /home/ubuntu/scripts/setup.sh"; then
+  echo "❌ Runner setup failed"
+  exit 1
+fi
+
+echo "✅ Bootstrap complete: Kubernetes + projects deployed + runner ready."

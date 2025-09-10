@@ -15,12 +15,6 @@ variable "ami_id" {
   default     = "ami-04f59c565deeb2199"
 }
 
-variable "runner_token" {
-  description = "GitHub Actions org-level runner token"
-  type        = string
-  sensitive   = true
-}
-
 variable "gh_pat" {
   description = "GitHub Personal Access Token for org runner registration"
   type        = string
