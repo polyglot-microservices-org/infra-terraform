@@ -49,12 +49,12 @@ cd $CLONE_ROOT
 
 echo "📂 Fetching list of repositories in organization..."
 REPO_LIST=$(curl -s -H "Authorization: token $TOKEN" \
-  "[https://api.github.com/orgs/$ORG_NAME/repos?per_page=100](https://api.github.com/orgs/$ORG_NAME/repos?per_page=100)" | jq -r '.[].name')
+  "https://api.github.com/orgs/$ORG_NAME/repos?per_page=100" | jq -r '.[].name')
 
 for repo in $REPO_LIST; do
   if [ ! -d "$CLONE_ROOT/$repo" ]; then
     echo "⬇️ Cloning $repo..."
-    git clone [https://github.com/$ORG_NAME/$repo.git](https://github.com/$ORG_NAME/$repo.git) $CLONE_ROOT/$repo
+    git clone "https://github.com/$ORG_NAME/$repo.git" "$CLONE_ROOT/$repo"
   else
     echo "🔄 Updating existing $repo..."
     cd $CLONE_ROOT/$repo
