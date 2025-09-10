@@ -20,7 +20,17 @@ EOF
 chmod +x /home/ubuntu/scripts/*.sh
 chown ubuntu:ubuntu /home/ubuntu/scripts/*.sh
 
-# Export variables for scripts
+# -----------------------------
+# Persist environment variables system-wide
+# -----------------------------
+cat <<EOF | sudo tee -a /etc/environment
+GH_PAT=${GH_PAT}
+AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+AWS_REGION=${AWS_REGION}
+EOF
+
+# Export for current shell too
 export GH_PAT="${GH_PAT}"
 export AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
 export AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
@@ -37,7 +47,7 @@ su - ubuntu -c "bash /home/ubuntu/scripts/kubeadm.sh"
 # -----------------------------
 ORG_NAME="polyglot-microservices-org"
 CLONE_ROOT="/home/ubuntu/polyglot-org"
-TOKEN="${GH_PAT}"  # GitHub PAT passed as env var from Terraform / workflow
+TOKEN="${GH_PAT}"  # GitHub PAT
 
 mkdir -p $CLONE_ROOT
 cd $CLONE_ROOT
@@ -62,8 +72,8 @@ done
 # 3️⃣ Create Kubernetes secret with AWS credentials
 # -----------------------------
 echo "🔑 Creating Kubernetes secret for AWS credentials..."
-# Running kubectl as the 'ubuntu' user to use the correct kubeconfig
 su - ubuntu -c '
+  source /etc/environment
   kubectl create secret generic bedrock-secrets \
     --from-literal=AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
     --from-literal=AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
@@ -75,9 +85,9 @@ su - ubuntu -c '
 # 4️⃣ Deploy all Kubernetes manifests
 # -----------------------------
 echo "📦 Deploying all Kubernetes manifests..."
-# Running kubectl as the 'ubuntu' user to use the correct kubeconfig
 su - ubuntu -c '
-  find $CLONE_ROOT -name "*.yaml" -not -path "*/.github/*" \
+  source /etc/environment
+  find /home/ubuntu/polyglot-org -name "*.yaml" -not -path "*/.github/*" \
     -exec kubectl apply -f {} \;
 '
 
@@ -85,7 +95,7 @@ su - ubuntu -c '
 # 5️⃣ Setup GitHub Actions runner
 # -----------------------------
 echo "🚀 Running GitHub Actions runner setup..."
-if ! su - ubuntu -c "bash /home/ubuntu/scripts/setup.sh"; then
+if ! su - ubuntu -c "source /etc/environment && bash /home/ubuntu/scripts/setup.sh"; then
   echo "❌ Runner setup failed"
   exit 1
 fi
