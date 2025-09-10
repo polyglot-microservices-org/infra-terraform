@@ -32,11 +32,6 @@ export AWS_REGION="${AWS_REGION}"
 echo "🚀 Running Kubernetes control plane setup..."
 su - ubuntu -c "bash /home/ubuntu/scripts/kubeadm.sh"
 
-# Add a delay to ensure the Kubernetes API server is ready.
-# This fixes the "connection refused" error which is a race condition.
-echo "⏳ Waiting for Kubernetes API server to become ready..."
-sleep 10
-
 # -----------------------------
 # 2️⃣ Clone all repositories in the organization
 # -----------------------------
@@ -44,8 +39,8 @@ ORG_NAME="polyglot-microservices-org"
 CLONE_ROOT="/home/ubuntu/polyglot-org"
 TOKEN="${GH_PAT}"  # GitHub PAT passed as env var from Terraform / workflow
 
-mkdir -p "$CLONE_ROOT"
-cd "$CLONE_ROOT"
+mkdir -p $CLONE_ROOT
+cd $CLONE_ROOT
 
 echo "📂 Fetching list of repositories in organization..."
 REPO_LIST=$(curl -s -H "Authorization: token $TOKEN" \
@@ -54,12 +49,12 @@ REPO_LIST=$(curl -s -H "Authorization: token $TOKEN" \
 for repo in $REPO_LIST; do
   if [ ! -d "$CLONE_ROOT/$repo" ]; then
     echo "⬇️ Cloning $repo..."
-    git clone "https://github.com/$ORG_NAME/$repo.git" "$CLONE_ROOT/$repo"
+    git clone https://github.com/$ORG_NAME/$repo.git $CLONE_ROOT/$repo
   else
     echo "🔄 Updating existing $repo..."
-    cd "$CLONE_ROOT/$repo"
+    cd $CLONE_ROOT/$repo
     git pull origin main
-    cd "$CLONE_ROOT"
+    cd $CLONE_ROOT
   fi
 done
 
@@ -67,8 +62,8 @@ done
 # 3️⃣ Create Kubernetes secret with AWS credentials
 # -----------------------------
 echo "🔑 Creating Kubernetes secret for AWS credentials..."
-# Running kubectl as the 'ubuntu' user and preserving the environment variables with sudo -E
-sudo -E -u ubuntu bash -c '
+# Running kubectl as the 'ubuntu' user to use the correct kubeconfig
+su - ubuntu -c '
   kubectl create secret generic bedrock-secrets \
     --from-literal=AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
     --from-literal=AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
@@ -80,9 +75,9 @@ sudo -E -u ubuntu bash -c '
 # 4️⃣ Deploy all Kubernetes manifests
 # -----------------------------
 echo "📦 Deploying all Kubernetes manifests..."
-# Running kubectl as the 'ubuntu' user and preserving the environment variables with sudo -E
-sudo -E -u ubuntu bash -c '
-  find "$CLONE_ROOT" -name "*.yaml" -not -path "*/.github/*" \
+# Running kubectl as the 'ubuntu' user to use the correct kubeconfig
+su - ubuntu -c '
+  find $CLONE_ROOT -name "*.yaml" -not -path "*/.github/*" \
     -exec kubectl apply -f {} \;
 '
 
@@ -90,8 +85,7 @@ sudo -E -u ubuntu bash -c '
 # 5️⃣ Setup GitHub Actions runner
 # -----------------------------
 echo "🚀 Running GitHub Actions runner setup..."
-# Running the setup script as the 'ubuntu' user and preserving the environment variables with sudo -E
-if ! sudo -E -u ubuntu bash /home/ubuntu/scripts/setup.sh; then
+if ! su - ubuntu -c "bash /home/ubuntu/scripts/setup.sh"; then
   echo "❌ Runner setup failed"
   exit 1
 fi
