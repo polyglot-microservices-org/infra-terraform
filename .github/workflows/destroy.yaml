@@ -4,50 +4,41 @@ on:
   workflow_dispatch:  # manual trigger only
 
 jobs:
-  destroy:
+  terraform:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      # 2️⃣ Configure AWS CLI
       - name: Configure AWS CLI
         run: |
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set region ${{ secrets.AWS_REGION }}
 
+      # 3️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
 
-      # Step 1: Destroy main infrastructure
-      - name: Destroy Main Infrastructure
+      # 4️⃣ Terraform Init
+      - name: Terraform Init
         run: |
           cd terraform
           terraform init
+
+      # 5️⃣ Terraform Destroy
+      - name: Terraform Destroy
+        run: |
+          cd terraform
           terraform destroy -auto-approve \
             -var="aws_region=${{ secrets.AWS_REGION }}" \
             -var="gh_pat=${{ secrets.GH_PAT }}" \
             -var="aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var="aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-
-      # Step 2: Empty S3 bucket (required before destroying)
-      - name: Empty S3 Bucket
-        run: |
-          aws s3 rm s3://mitta-terraform-state-bucket --recursive || echo "Bucket doesn't exist or already empty"
-
-      # Step 3: Destroy S3 and DynamoDB state backend
-      - name: Destroy State Backend
-        run: |
-          cd terraform-s3
-          terraform init
-          terraform destroy -auto-approve
-
-      # Step 4: Clean up any remaining state files
-      - name: Clean Up Local State
-        run: |
-          rm -f terraform/.terraform/terraform.tfstate
-          rm -f terraform-s3/.terraform/terraform.tfstate
-          echo "All infrastructure destroyed and state cleaned up"
