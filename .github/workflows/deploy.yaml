@@ -37,13 +37,27 @@ jobs:
         with:
           terraform_version: 1.6.0
 
-      # 6️⃣ Terraform Init
+      # 6️⃣ Acquire DynamoDB lock
+      - name: Acquire lock
+        run: |
+          aws dynamodb put-item \
+            --table-name terraform-state-locks \
+            --item '{"LockID":{"S":"terraform-lock"}}' \
+            --condition-expression "attribute_not_exists(LockID)"
+
+      # 7️⃣ Download state from S3
+      - name: Download state
+        run: |
+          cd terraform
+          aws s3 cp s3://mitta-terraform-state-bucket/terraform.tfstate . || echo "No existing state"
+
+      # 8️⃣ Terraform Init
       - name: Terraform Init
         run: |
           cd terraform
           terraform init
 
-      # 7️⃣ Terraform Apply
+      # 9️⃣ Terraform Apply
       - name: Terraform Apply
         run: |
           cd terraform
@@ -52,3 +66,17 @@ jobs:
             -var="gh_pat=${{ secrets.GH_PAT }}" \
             -var="aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var="aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
+      # 🔟 Upload state to S3
+      - name: Upload state
+        run: |
+          cd terraform
+          aws s3 cp terraform.tfstate s3://mitta-terraform-state-bucket/
+
+      # 1️⃣1️⃣ Release DynamoDB lock
+      - name: Release lock
+        if: always()
+        run: |
+          aws dynamodb delete-item \
+            --table-name terraform-state-locks \
+            --key '{"LockID":{"S":"terraform-lock"}}' || true
