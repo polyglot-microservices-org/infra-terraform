@@ -1,0 +1,33 @@
+name: Setup S3 State Backend
+
+on:
+  workflow_dispatch:  # manual trigger only
+
+jobs:
+  setup-state:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        run: |
+          cd terraform-s3
+          terraform init
+
+      - name: Terraform Apply
+        run: |
+          cd terraform-s3
+          terraform apply -auto-approve
