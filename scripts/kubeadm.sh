@@ -55,5 +55,10 @@ echo "Installing Metrics Server..."
 sudo -u ubuntu kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
 # ---
-echo "✅ Kubernetes control plane setup is complete with Weave Net CNI and Metrics Server installed."
+# Create RBAC for default service account to access cluster resources
+echo "Creating RBAC permissions for kubectl access..."
+sudo -u ubuntu kubectl create clusterrolebinding default-view --clusterrole=view --serviceaccount=default:default
+
+# ---
+echo "✅ Kubernetes control plane setup is complete with Weave Net CNI, Metrics Server, and RBAC permissions."
 
